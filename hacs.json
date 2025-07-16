@@ -3,7 +3,7 @@
   "content_in_root": false,
   "zip_release": false,
   "hacs": "1.0.0",
-  "domains": ["integration", "lovelace"],
+  "domains": ["lovelace"],
   "country": "US",
   "homeassistant": "2023.1.0",
   "render_readme": true,
