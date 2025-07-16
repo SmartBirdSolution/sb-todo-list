@@ -1,0 +1,11 @@
+{
+  "domain": "sb_todo",
+  "name": "SB To-do",
+  "version": "1.0.0",
+  "documentation": "https://github.com/SmartBirdSolution/sb-todo-list",
+  "requirements": [],
+  "dependencies": [],
+  "config_flow": false,
+  "codeowners": ["@SmartBirdSolution"],
+  "services": "services.yaml"
+}

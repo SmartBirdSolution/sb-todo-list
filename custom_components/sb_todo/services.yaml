@@ -1,0 +1,203 @@
+get_items:
+  name: "Get Items"
+  description: "Retrieve all items from the todo list with optional status filtering."
+  target:
+    entity:
+      domain: sb_todo
+  fields:
+    status:
+      name: "Status"
+      description: "Filter items by status"
+      example: "needs_action"
+      default: needs_action
+      selector:
+        select:
+          translation_key: status
+          options:
+            - needs_action
+            - completed
+          multiple: true
+
+add_item:
+  name: "Add Item"
+  description: "Add a new item to the todo list."
+  target:
+    entity:
+      domain: sb_todo
+      supported_features:
+        - sb_todo.TodoListEntityFeature.CREATE_TODO_ITEM
+  fields:
+    item:
+      name: "Item summary"
+      required: true
+      example: "Submit income tax return"
+      selector:
+        text:
+    due_date:
+      name: "Due Date"
+      filter:
+        supported_features:
+          - sb_todo.TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
+      example: "2023-11-17"
+      selector:
+        date:
+    due_datetime:
+      name: "Due Date & Time"
+      filter:
+        supported_features:
+          - sb_todo.TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
+      example: "2023-11-17 13:30:00"
+      selector:
+        datetime:
+    description:
+      name: "Description"
+      filter:
+        supported_features:
+          - sb_todo.TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
+      example: "A more complete description of the to-do item than that provided by the summary."
+      selector:
+        text:
+    requiring:
+      name: "Requiring"
+      example: true
+      selector:
+        boolean:
+    period:
+      name: "Repeat Period"
+      example: "3d"
+      selector:
+        text:
+
+update_item:
+  name: "Update Item"
+  description: "Update or rename an item on the todo list."
+  target:
+    entity:
+      domain: sb_todo
+      supported_features:
+        - sb_todo.TodoListEntityFeature.UPDATE_TODO_ITEM
+  fields:
+    item:
+      name: "Item ID or summary"
+      required: true
+      example: "Submit income tax return"
+      selector:
+        text:
+    rename:
+      name: "Rename To"
+      example: "Something else"
+      selector:
+        text:
+    status:
+      name: "New Status"
+      example: "needs_action"
+      selector:
+        select:
+          translation_key: status
+          options:
+            - needs_action
+            - completed
+    due_date:
+      name: "New Due Date"
+      filter:
+        supported_features:
+          - sb_todo.TodoListEntityFeature.SET_DUE_DATE_ON_ITEM
+      example: "2023-11-17"
+      selector:
+        date:
+    due_datetime:
+      name: "New Due Date & Time"
+      filter:
+        supported_features:
+          - sb_todo.TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM
+      example: "2023-11-17 13:30:00"
+      selector:
+        datetime:
+    description:
+      name: "New Description"
+      filter:
+        supported_features:
+          - sb_todo.TodoListEntityFeature.SET_DESCRIPTION_ON_ITEM
+      example: "A more complete description of the to-do item than that provided by the summary."
+      selector:
+        text:
+    requiring:
+      name: "Requiring"
+      example: true
+      selector:
+        boolean:
+    period:
+      name: "Repeat Period"
+      example: "3d"
+      selector:
+        text:
+
+remove_item:
+  name: "Remove Item"
+  description: "Remove an item from the todo list."
+  target:
+    entity:
+      domain: sb_todo
+      supported_features:
+        - sb_todo.TodoListEntityFeature.DELETE_TODO_ITEM
+  fields:
+    item:
+      name: "Item ID or summary"
+      required: true
+      example: "Submit income tax return"
+      selector:
+        text:
+
+remove_completed_items:
+  name: "Remove Completed Items"
+  description: "Delete all completed items from the list."
+  target:
+    entity:
+      domain: sb_todo
+      supported_features:
+        - sb_todo.TodoListEntityFeature.DELETE_TODO_ITEM
+
+create_list:
+  name: "Create List"
+  description: "Create a new todo list dynamically."
+  fields:
+    name:
+      name: "List Name"
+      description: "Name of the todo list to create."
+      example: "Tasks"
+      required: true
+      selector:
+        text:
+
+delete_list:
+  name: "Delete List"
+  description: "Delete an existing todo list."
+  fields:
+    name:
+      name: "List Name"
+      description: "Name of the todo list to delete."
+      example: "Tasks"
+      required: true
+      selector:
+        text:
+
+rename_list:
+  name: "Rename List"
+  description: "Rename the display name of an existing todo list."
+  fields:
+    entity_id:
+      name: "Entity ID"
+      description: "Full entity ID of the list to rename, e.g. sb_todo.tasks."
+      example: "sb_todo.tasks"
+      required: true
+      selector:
+        entity:
+          domain: sb_todo
+    new_name:
+      name: "New Display Name"
+      description: "New display name for the list."
+      example: "Work Tasks"
+      required: true
+      selector:
+        text:
+

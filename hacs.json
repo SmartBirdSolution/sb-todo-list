@@ -1,0 +1,8 @@
+{
+  "name": "sb-todo-list",
+  "country": "Worldwide",
+  "domains": ["sensor", "binary_sensor"],
+  "homeassistant": "2023.1.0",
+  "render_readme": true,
+  "version": "1.0.0"
+}

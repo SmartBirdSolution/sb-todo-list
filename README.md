@@ -1,0 +1,60 @@
+# sb_todo service call examples
+
+# 1. Create a new todo list named "Work Tasks"
+- action: sb_todo.create_list\
+  data:\
+  name: Work Tasks
+
+# 2. Delete an existing todo list named "Work Tasks"
+- action: sb_todo.delete_list\
+  data:\
+  name: Work Tasks
+
+# 3. Rename a todo list from "Work Tasks" to "Office Tasks"
+- action: sb_todo.rename_list\
+  data:\
+  entity_id: sb_todo.tasks  # full entity ID of the todo list to rename\
+  new_name: "Work Tasks"    # new display name for the list
+
+
+# 4. Add a todo item "Submit report" to a list entity
+- action: sb_todo.add_item\
+  target:\
+  entity_id: sb_todo.work_tasks\
+  data:\
+  item: Submit report\
+  due_date: 2025-07-15\
+  description: Finalize and submit the monthly report\
+  requiring: true\
+  period: 1week
+
+# 5. Update a todo item status and rename it
+- action: sb_todo.update_item\
+  target:\
+  entity_id: sb_todo.work_tasks\
+  data:\
+  item: Submit report\
+  status: completed\
+  rename: Submit final report\
+  due_date: 2025-07-16
+
+# 6. Remove a todo item by name
+- action: sb_todo.remove_item\
+  target:\
+  entity_id: sb_todo.work_tasks\
+  data:\
+  item: Submit final report
+
+# 7. Remove all completed todo items from the list
+- action: sb_todo.remove_completed_items\
+  target:\
+  entity_id: sb_todo.work_tasks
+
+# 8. Get todo items filtered by status
+- action: sb_todo.get_items\
+  target:\
+  entity_id: sb_todo.work_tasks\
+  data:\
+  status:\
+  - needs_action\
+  - completed
