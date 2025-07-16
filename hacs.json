@@ -7,5 +7,6 @@
   "country": "US",
   "homeassistant": "2023.1.0",
   "render_readme": true,
-  "version": "1.0.0"
+  "version": "1.0.0",
+  "filename": "sb-todo-list-card.js"
 }
