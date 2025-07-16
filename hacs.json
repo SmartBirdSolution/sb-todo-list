@@ -8,5 +8,6 @@
   "homeassistant": "2023.1.0",
   "render_readme": true,
   "version": "1.0.0",
-  "filename": "dist/sb-todo-list-card.js"
+  "filename": "custom_cards/sb-todo-list-card.js",
+  "type": "lovelace"
 }
