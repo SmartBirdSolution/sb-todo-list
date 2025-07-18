@@ -310,6 +310,12 @@ async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
         for entity in DYNAMIC_LISTS.values():
             await entity.async_update_requiring_items()
 
+    async_track_time_interval(
+        hass,
+        periodic_update,
+        datetime.timedelta(seconds=5)
+    )
+
     @callback
     def periodic_cleanup(now):
         hass.async_create_task(cleanup_sb_todo_files())
