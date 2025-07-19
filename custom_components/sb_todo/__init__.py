@@ -56,6 +56,17 @@ class TodoItemFieldDescription:
     validation: Callable[[Any], Any]
     required_feature: TodoListEntityFeature
 
+
+def validate_unix_timestamp(value):
+    """Ensure value is a float or int UNIX timestamp (seconds)."""
+    try:
+        timestamp = float(value)
+        if timestamp < 0:
+            raise vol.Invalid("Timestamp must be non-negative.")
+        return timestamp
+    except (ValueError, TypeError):
+        raise vol.Invalid(f"Invalid timestamp: {value}")
+
 TODO_ITEM_FIELDS = [
     TodoItemFieldDescription(
         service_field=ATTR_DUE_DATE,
@@ -65,7 +76,7 @@ TODO_ITEM_FIELDS = [
     ),
     TodoItemFieldDescription(
         service_field=ATTR_DUE_DATETIME,
-        validation=vol.Any(vol.All(cv.datetime, lambda dt: dt.astimezone()), None),
+        validation=vol.Any(vol.All(validate_unix_timestamp), None),
         todo_item_field=ATTR_DUE_DATETIME,
         required_feature=TodoListEntityFeature.SET_DUE_DATETIME_ON_ITEM,
     ),

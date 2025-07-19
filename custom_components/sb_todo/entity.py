@@ -18,7 +18,6 @@ from .const import DOMAIN, TodoItemStatus, TodoListEntityFeature
 
 _LOGGER = logging.getLogger(__name__)
 
-
 @dataclasses.dataclass
 class TodoItem:
     uid: Optional[str]
@@ -31,10 +30,22 @@ class TodoItem:
     period: Optional[str] = None
 
     def to_dict(self) -> dict[str, Any]:
-        return dataclasses.asdict(self)
+        # Convert datetime fields to Unix timestamps
+        def convert_to_timestamp(value):
+            if isinstance(value, datetime):
+                return value.timestamp()
+            return value
+
+        return {k: convert_to_timestamp(v) for k, v in dataclasses.asdict(self).items()}
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> TodoItem:
+        # Convert Unix timestamps back to datetime objects
+        # def convert_to_datetime(value):
+        #     if isinstance(value, (int, float)):
+        #         return datetime.fromtimestamp(value)
+        #     return value
+
         return cls(
             uid=data.get("uid"),
             summary=data["summary"],
@@ -112,12 +123,24 @@ class MyTodoList(Entity):
                     else:
                         items_list = data
 
+                    # Convert Unix timestamps to ISO strings for due_datetime
+                    # for item in items_list:
+                    #     due_dt = item.get("due_datetime")
+                    #     if due_dt is not None:
+                    #         if isinstance(due_dt, (int, float)):
+                    #             try:
+                    #                 dt_obj = datetime.fromtimestamp(due_dt)
+                    #                 item["isoformat"] = dt_obj.isoformat()
+                    #             except Exception as e:
+                    #                 _LOGGER.warning("Failed to parse due_datetime timestamp %s: %s", due_dt, e)
+
                     self._todo_items = [TodoItem.from_dict(item) for item in items_list]
                     _LOGGER.debug("Loaded %d todo items for %s", len(self._todo_items), self._name)
             except Exception as e:
                 _LOGGER.error("Failed to load items for %s: %s", self._name, e)
         else:
             self._todo_items = []
+
 
     async def async_create_todo_item(self, item: TodoItem) -> None:
         # Check if an item with the same summary already exists
@@ -192,62 +215,75 @@ class MyTodoList(Entity):
         for listener in self._listeners:
             listener(self._todo_items)
 
-    async def _save_and_refresh(self) -> None:
-        try:
-            os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
-            with open(self._storage_path, "w", encoding="utf-8") as f:
-                json.dump({
-                    "display_name": self._display_name,
-                    "todo_items": [item.to_dict() for item in self._todo_items],
-                }, f, ensure_ascii=False, indent=2)
-        except Exception as e:
-            _LOGGER.error("Failed to save items for %s: %s", self._name, e)
 
-        self._attr_extra_state_attributes["todo_items"] = [item.to_dict() for item in self._todo_items]
+    async def _save_and_refresh(self) -> None:
+        os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
+
+        # Prepare data for JSON serialization
+        data = {
+            "display_name": self._display_name,
+            "todo_items": [item.to_dict() for item in self._todo_items],
+        }
+
+        # Debug log for full JSON content
+        _LOGGER.debug("Saving JSON: %s", json.dumps(data, ensure_ascii=False, indent=2))
+
+        text = json.dumps(data, ensure_ascii=False, indent=2)
+        tmp = f"{self._storage_path}.tmp"
+
+        # Write to temporary file
+        with open(tmp, "w", encoding="utf-8") as f:
+            f.write(text)
+
+        # Replace the old file only if write succeeded
+        os.replace(tmp, self._storage_path)
+
+        # Now update the Home Assistant state and listeners
+        self._attr_extra_state_attributes["todo_items"] = [
+            item.to_dict() for item in self._todo_items
+        ]
         self.async_write_ha_state()
         self.async_update_listeners()
 
     async def async_update_requiring_items(self) -> None:
-        now = dt_util.now()
+        now = datetime.now()
         updated = False
-        _LOGGER.info("Starting async_update_requiring_items check at %s", now.isoformat())
 
         for item in self._todo_items:
-            if not item.requiring:
+            if not item.requiring or not item.period:
                 continue
 
-            period = self._parse_period(item.period)
-            if not period:
-                _LOGGER.info("Skipping item '%s' due to invalid or missing period: %s", item.summary, item.period)
+            period_delta = self._parse_period(item.period)
+            if not period_delta:
+                _LOGGER.info("Skipping '%s': invalid period %s", item.summary, item.period)
                 continue
 
-            due = self._parse_datetime(item.due_datetime or item.due_date)
+            old_due = self._parse_datetime(item.due_datetime)
 
             if item.status == TodoItemStatus.COMPLETED:
-                _LOGGER.info(
-                    "Item '%s' is COMPLETED; resetting to NEEDS_ACTION and updating due_datetime", item.summary
-                )
+                _LOGGER.info("Rescheduling '%s' (was completed).", item.summary)
                 item.status = TodoItemStatus.NEEDS_ACTION
-                item.due_datetime = (now + period).isoformat()
+                _LOGGER.info("Rescheduling '%s'", item.due_datetime)
+                if item.due_datetime:
+                    old_due = datetime.fromtimestamp(item.due_datetime)
+                    new_due = old_due + period_delta
+                    _LOGGER.info("Rescheduling1 '%s'", new_due)
+                else:
+                    _LOGGER.info("Rescheduling2 '%s'",now + period_delta)
+                    new_due = now + period_delta
+
+                _LOGGER.info("Rescheduling '%s'",  new_due.isoformat())
+                _LOGGER.info("Rescheduling '%s'",  new_due.timestamp())
+                item.due_datetime = new_due.timestamp()
                 updated = True
 
-            # elif item.status == TodoItemStatus.NEEDS_ACTION:
-            #     old_due = due.isoformat() if due else "None"
-            #     new_due = (due + period).isoformat() if due else (now + period).isoformat()
-            #     _LOGGER.info(
-            #         "Item '%s' is NEEDS_ACTION; updating due_datetime from %s to %s", item.summary, old_due, new_due
-            #     )
-            #     if due:
-            #         item.due_datetime = (due + period).isoformat()
-            #     else:
-            #         item.due_datetime = (now + period).isoformat()
-            #     updated = True
-
         if updated:
-            _LOGGER.info("Changes detected; saving updates for todo items.")
+            _LOGGER.info("Detected updates, saving rescheduled items.")
             await self._save_and_refresh()
         else:
-            _LOGGER.info("No changes detected; no update required.")
+            _LOGGER.debug("No requiring/completed items to reschedule.")
+
+
 
     def _parse_period(self, period_str: Optional[str]) -> Optional[timedelta]:
         if not period_str:
@@ -277,8 +313,11 @@ class MyTodoList(Entity):
         if not value:
             return None
         try:
-            return dt_util.parse_datetime(value)
-        except Exception:
+            # Assume value is a timestamp string or number (int/float)
+            timestamp = float(value)  # convert string to float if needed
+            return datetime.fromtimestamp(timestamp)
+        except (ValueError, TypeError) as e:
+            _LOGGER.error(f"Failed to parse timestamp '{value}': {e}")
             return None
 
     def validate_period(value):
