@@ -13,6 +13,7 @@ from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.storage import STORAGE_DIR
 from homeassistant.core import CALLBACK_TYPE, callback
 from homeassistant.util import dt as dt_util
+from dateutil.relativedelta import relativedelta
 
 from .const import DOMAIN, TodoItemStatus, TodoListEntityFeature
 
@@ -135,7 +136,9 @@ class MyTodoList(Entity):
                     #                 _LOGGER.warning("Failed to parse due_datetime timestamp %s: %s", due_dt, e)
 
                     self._todo_items = [TodoItem.from_dict(item) for item in items_list]
+                    self._todo_items.sort(key=lambda item: float(item.due_datetime) if item.due_datetime is not None else float('inf'))
                     _LOGGER.debug("Loaded %d todo items for %s", len(self._todo_items), self._name)
+
             except Exception as e:
                 _LOGGER.error("Failed to load items for %s: %s", self._name, e)
         else:
@@ -217,6 +220,8 @@ class MyTodoList(Entity):
 
 
     async def _save_and_refresh(self) -> None:
+        self._todo_items.sort(key=lambda item: float(item.due_datetime) if item.due_datetime is not None else float('inf'))
+
         os.makedirs(os.path.dirname(self._storage_path), exist_ok=True)
 
         # Prepare data for JSON serialization
@@ -242,6 +247,7 @@ class MyTodoList(Entity):
         self._attr_extra_state_attributes["todo_items"] = [
             item.to_dict() for item in self._todo_items
         ]
+
         self.async_write_ha_state()
         self.async_update_listeners()
 
@@ -304,9 +310,9 @@ class MyTodoList(Entity):
         elif unit == "week":
             return timedelta(weeks=num)
         elif unit == "month":
-            return timedelta(days=30 * num)
+            return relativedelta(months=num)
         elif unit == "year":
-            return timedelta(days=365 * num)
+            return relativedelta(years=num)
         return None
 
     def _parse_datetime(self, value: Optional[str]) -> Optional[datetime]:
